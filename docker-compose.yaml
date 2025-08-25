@@ -7,6 +7,6 @@ services:
             dockerfile: Dockerfile
         image: spl-source:latest
         ports:
-            - '4000:4000'
+            - '4000:8000'
         network_mode: host
         restart: always
