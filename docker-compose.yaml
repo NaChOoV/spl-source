@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+    spl-source:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: spl-source:latest
+        ports:
+            - '4000:4000'
+        network_mode: host
+        restart: always
