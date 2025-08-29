@@ -33,7 +33,8 @@ class SourceService:
         )
 
         if not response.json()["estado"]["sesion"]:
-            response.raise_for_status()
+            print(response.json()["estado"]["sesion"])
+            raise Unauthorized("Login failed - invalid credentials")
 
         self._cookies = response.cookies
         self._logger.info("Logged in successfully")
