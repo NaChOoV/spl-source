@@ -21,7 +21,7 @@ class Config:
 
         # Server Configuration
         self.HOST = os.getenv("HOST", "localhost")
-        self.PORT = int(os.getenv("PORT", "8000"))
+        self.PORT = int(os.getenv("PORT", "4000"))
         self.DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 
         # Authentication Configuration
