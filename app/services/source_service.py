@@ -1,5 +1,5 @@
 import httpx
-from httpx import Cookies, Response
+from httpx import Cookies, Response, Timeout
 
 from datetime import datetime
 from config.env import config
@@ -24,12 +24,22 @@ class SourceService:
         self._base_url: str = config.SOURCE_BASE_URL
         self._cookies: Cookies | None = None
 
+        self._timeout = Timeout(
+            connect=10.0,  # Timeout para establecer conexión
+            read=30.0,  # Timeout para leer respuesta
+            write=10.0,  # Timeout para escribir datos
+            pool=10.0,  # Timeout para obtener conexión del pool
+        )
+
     def login(self) -> Response:
         form_data = {"LOGIN": config.SOURCE_USERNAME, "CLAVE": config.SOURCE_PASSWORD}
         headers = {"user-agent": ""}
 
         response = httpx.post(
-            f"{self._base_url}/login_servidor.php", data=form_data, headers=headers
+            f"{self._base_url}/login_servidor.php",
+            data=form_data,
+            headers=headers,
+            timeout=self._timeout,
         )
 
         if not response.json()["estado"]["sesion"]:
@@ -108,6 +118,7 @@ class SourceService:
             data=form_data,
             headers=headers,
             cookies=self._cookies,
+            timeout=self._timeout,
         )
 
         try:
@@ -149,6 +160,7 @@ class SourceService:
                 "user-agent": "",
                 "accept": "text/html",
             },
+            timeout=self._timeout,
         )
 
         try:
@@ -215,6 +227,7 @@ class SourceService:
                 "Content-Type": "application/x-www-form-urlencoded",
             },
             data=form_data,
+            timeout=self._timeout,
         )
 
         try:
@@ -253,6 +266,7 @@ class SourceService:
                 "Content-Type": "application/x-www-form-urlencoded",
             },
             data=form_data,
+            timeout=self._timeout,
         )
         try:
             response = response.json()
