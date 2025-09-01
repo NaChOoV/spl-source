@@ -1,6 +1,6 @@
-from requests.cookies import RequestsCookieJar
-from requests import Response
-import requests
+import httpx
+from httpx import Cookies, Response
+
 from datetime import datetime
 from config.env import config
 from app.mappers.access_mappers import AccessDataMapper
@@ -22,13 +22,13 @@ class SourceService:
     def __init__(self):
         self._logger = logging.getLogger(self.__class__.__name__)
         self._base_url: str = config.SOURCE_BASE_URL
-        self._cookies: RequestsCookieJar | None = None
+        self._cookies: Cookies | None = None
 
     def login(self) -> Response:
         form_data = {"LOGIN": config.SOURCE_USERNAME, "CLAVE": config.SOURCE_PASSWORD}
         headers = {"user-agent": ""}
 
-        response = requests.post(
+        response = httpx.post(
             f"{self._base_url}/login_servidor.php", data=form_data, headers=headers
         )
 
@@ -71,7 +71,7 @@ class SourceService:
                 # Retry the original operation with new session
                 return operation_func()
 
-            except (requests.RequestException, KeyError, json.JSONDecodeError) as e:
+            except (httpx.RequestError, KeyError, json.JSONDecodeError) as e:
                 self._logger.warning(f"Retry attempt {attempt + 1} failed: {str(e)}")
 
                 if attempt == max_retries:
@@ -103,7 +103,7 @@ class SourceService:
         }
 
         headers = {"user-agent": ""}
-        response = requests.post(
+        response = httpx.post(
             f"{self._base_url}/main_servidor.php",
             data=form_data,
             headers=headers,
@@ -142,7 +142,7 @@ class SourceService:
         Returns:
             AbmUser | None: The user information or None if not found
         """
-        response = requests.get(
+        response = httpx.get(
             f"{self._base_url}/abm/abm_socios.php?CONTACTOCAMPO7={run}",
             cookies=self._cookies,
             headers={
@@ -207,7 +207,7 @@ class SourceService:
             "QUERY": "VERPERFIL",
             "IDCONTACTO": external_id,
         }
-        response = requests.post(
+        response = httpx.post(
             f"{self._base_url}/main_servidor.php",
             cookies=self._cookies,
             headers={
@@ -245,7 +245,7 @@ class SourceService:
             "IDCONTACTO": external_id,
         }
 
-        response = requests.post(
+        response = httpx.post(
             f"{self._base_url}/main_servidor.php",
             cookies=self._cookies,
             headers={
