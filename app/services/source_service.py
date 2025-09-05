@@ -194,7 +194,7 @@ class SourceService:
         cells = first_row.find_all("td")
         cell_run = cells[1].get_text(strip=True).upper() if cells[1] else ""
 
-        if cell_run != run:
+        if cell_run != run.upper():
             return None
 
         external_id = cells[0].get_text(strip=True) if cells[0] else ""
