@@ -154,7 +154,7 @@ class SourceService:
             AbmUser | None: The user information or None if not found
         """
         response = httpx.get(
-            f"{self._base_url}/abm/abm_socios.php?CONTACTOCAMPO7={run}",
+            f"{self._base_url}/abm/abm_socios.php?CONTACTOCAMPO7={run.upper()}",
             cookies=self._cookies,
             headers={
                 "user-agent": "",
