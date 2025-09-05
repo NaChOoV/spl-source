@@ -192,7 +192,7 @@ class SourceService:
         if not isinstance(first_row, Tag):
             return None
         cells = first_row.find_all("td")
-        cell_run = cells[1].get_text(strip=True) if cells[1] else ""
+        cell_run = cells[1].get_text(strip=True).upper() if cells[1] else ""
 
         if cell_run != run:
             return None
@@ -202,7 +202,7 @@ class SourceService:
         first_name = cells[3].get_text(strip=True) if cells[3] else ""
 
         return AbmUser(
-            run=run,
+            run=run.upper(),
             first_name=first_name,
             last_name=last_name,
             external_id=int(external_id),
