@@ -2,6 +2,7 @@ from enum import Enum
 
 
 class Location(Enum):
+    ANTOFAGASTA_MALL = 101
     ESPACIO_URBANO = 102
     CALAMA = 104
     PACIFICO = 105
@@ -11,6 +12,7 @@ class Location(Enum):
 
 
 class LocationStr(Enum):
+    ANTOFAGASTA_MALL = "Antofagasta Mall"
     ESPACIO_URBANO = "Antofagasta Espacio Urbano"
     CALAMA = "Calama"
     PACIFICO = "Antofagasta Pacífico"

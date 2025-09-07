@@ -25,6 +25,7 @@ class AccessDataMapper:
         """
         # Create a mapping from LocationStr values to Location values
         location_mapping = {
+            LocationStr.ANTOFAGASTA_MALL.value: Location.ANTOFAGASTA_MALL.value,
             LocationStr.ESPACIO_URBANO.value: Location.ESPACIO_URBANO.value,
             LocationStr.CALAMA.value: Location.CALAMA.value,
             LocationStr.PACIFICO.value: Location.PACIFICO.value,
