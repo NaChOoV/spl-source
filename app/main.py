@@ -6,8 +6,21 @@ from app.controllers import (
     user_controller,
 )
 import logging
+import asyncio
+from contextlib import asynccontextmanager
 
 from app.services.source_service import SourceService
+
+source_service = SourceService()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    await source_service.login()
+    yield
+    # Shutdown (if needed)
+    # await source_service.logout()
 
 
 def create_app() -> FastAPI:
@@ -22,15 +35,13 @@ def create_app() -> FastAPI:
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
-    source_service = SourceService()
-    source_service.login()  # Ensure we are logged in at startup
-
     app = FastAPI(
         title=config.API_TITLE,
         version=config.API_VERSION,
         description=config.API_DESCRIPTION,
         docs_url="/docs",
         redoc_url="/redoc",
+        lifespan=lifespan,
     )
 
     # Include routers

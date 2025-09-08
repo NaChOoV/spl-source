@@ -26,7 +26,7 @@ async def get_abm_user(run: str):
         AbmUser: User data from ABM or empty dict
     """
 
-    abm_user = source_service.get_abm_user_by_run(run)
+    abm_user = await source_service.get_abm_user_by_run(run)
 
     if abm_user is None:
         return Response(status_code=200)
@@ -46,7 +46,7 @@ async def get_user(external_id: int):
         User: User data from ABM or empty dict
     """
 
-    user = source_service.get_user_by_external_id(external_id)
+    user = await source_service.get_user_by_external_id(external_id)
 
     if user is None:
         return Response(status_code=200)
@@ -66,10 +66,10 @@ async def get_user_inbody(run: str):
         AbmUser: User data from ABM or empty dict
     """
 
-    abm_user = source_service.get_abm_user_by_run(run)
+    abm_user = await source_service.get_abm_user_by_run(run)
     if abm_user is None:
         raise HTTPException(status_code=404, detail={"code": "USER_NOT_FOUND"})
 
-    inbody = source_service.get_inbody_by_external_id(abm_user.external_id)
+    inbody = await source_service.get_inbody_by_external_id(abm_user.external_id)
 
     return {"data": inbody}

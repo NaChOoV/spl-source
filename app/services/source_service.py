@@ -9,7 +9,7 @@ import json
 import logging
 from app.models.access_model import Access
 from app.models.user import AbmUser, User, UserAccess
-from typing import Callable
+from typing import Callable, Awaitable
 
 from utils.decorators import singleton
 from bs4 import BeautifulSoup, Tag
@@ -21,8 +21,13 @@ from utils.date_format import format_chilean_date_time_to_utc
 class SourceService:
     def __init__(self):
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._base_url: str = config.SOURCE_BASE_URL
+        self._base_url: str  = config.SOURCE_BASE_URL
         self._cookies: Cookies | None = None
+        self._proxy = None
+
+        if config.HTTP_PROXY:
+            self._proxy = config.HTTP_PROXY
+            self._logger.info(f"Using proxies: {self._proxy}")
 
         self._timeout = Timeout(
             connect=10.0,  # Timeout para establecer conexión
@@ -31,33 +36,35 @@ class SourceService:
             pool=10.0,  # Timeout para obtener conexión del pool
         )
 
-    def login(self) -> Response:
-        form_data = {"LOGIN": config.SOURCE_USERNAME, "CLAVE": config.SOURCE_PASSWORD}
-        headers = {"user-agent": ""}
-
-        response = httpx.post(
-            f"{self._base_url}/login_servidor.php",
-            data=form_data,
-            headers=headers,
-            timeout=self._timeout,
+        self._client = httpx.AsyncClient(
+            base_url=self._base_url,
+            timeout=30.0,
+            headers={"user-agent": ""},
+            proxy=self._proxy,
+            cookies=self._cookies,
         )
 
+    async def login(self) -> Response:
+        form_data = {"LOGIN": config.SOURCE_USERNAME, "CLAVE": config.SOURCE_PASSWORD}
+
+        response = await self._client.post("login_servidor.php", data=form_data)
+
         if not response.json()["estado"]["sesion"]:
-            print(response.json()["estado"]["sesion"])
             raise Unauthorized("Login failed - invalid credentials")
 
         self._cookies = response.cookies
         self._logger.info("Logged in successfully")
+
         return response
 
-    def _retry_with_login[T](
-        self, operation_func: Callable[[], T], max_retries: int = 3
+    async def _retry_with_login[T](
+        self, operation_func: Callable[[], Awaitable[T]], max_retries: int = 3
     ) -> T:
         """
         Retry an operation after re-authenticating.
 
         Args:
-            operation_func: Function to retry after login
+            operation_func: Async function to retry after login
             max_retries: Maximum number of retry attempts
 
         Returns:
@@ -73,13 +80,13 @@ class SourceService:
                 )
 
                 # Attempt to login
-                login_response = self.login()
+                login_response = await self.login()
 
                 if not login_response.json()["estado"]["sesion"]:
                     raise Unauthorized("Login failed - invalid credentials")
 
                 # Retry the original operation with new session
-                return operation_func()
+                return await operation_func()
 
             except (httpx.RequestError, KeyError, json.JSONDecodeError) as e:
                 self._logger.warning(f"Retry attempt {attempt + 1} failed: {str(e)}")
@@ -101,7 +108,7 @@ class SourceService:
             f"Authentication retry failed after {max_retries + 1} attempts"
         )
 
-    def get_today_access(self) -> list[Access]:
+    async def get_today_access(self) -> list[Access]:
         """
         Internal method to get today's access data that can be retried.
         """
@@ -111,22 +118,18 @@ class SourceService:
             "QUERY": "ACCESOS",
             "DATOSFORM": f"FECHAINI={today}&FECHAFIN={today}",
         }
-
-        headers = {"user-agent": ""}
-        response = httpx.post(
-            f"{self._base_url}/main_servidor.php",
+        response = await self._client.post(
+            "main_servidor.php",
             data=form_data,
-            headers=headers,
-            cookies=self._cookies,
-            timeout=self._timeout,
         )
 
         try:
             response_data = response.json()
             if response_data.get("sesion") is False:
-                return self._retry_with_login(self.get_today_access)
+                return await self._retry_with_login(self.get_today_access)
         except Exception as e:
             raise e
+
 
         html_content = response.json()["html"]
 
@@ -146,27 +149,21 @@ class SourceService:
             self._logger.error("No access data match found on the html body")
             return []
 
-    def get_abm_user_by_run(self, run: str) -> AbmUser | None:
+    async def get_abm_user_by_run(self, run: str) -> AbmUser | None:
         """
         Get the user information from the ABM system.
 
         Returns:
             AbmUser | None: The user information or None if not found
         """
-        response = httpx.get(
-            f"{self._base_url}/abm/abm_socios.php?CONTACTOCAMPO7={run.upper()}",
-            cookies=self._cookies,
-            headers={
-                "user-agent": "",
-                "accept": "text/html",
-            },
-            timeout=self._timeout,
+        response = await self._client.get(
+            f"/abm/abm_socios.php?CONTACTOCAMPO7={run.upper()}",
         )
 
         try:
             response_data = response.text
             if response_data == "OPCION DISPONIBLE SOLO PARA ADMINISTRADORES":
-                return self._retry_with_login(lambda: self.get_abm_user_by_run(run))
+                return await self._retry_with_login(lambda: self.get_abm_user_by_run(run))
         except Exception as e:
             raise e
 
@@ -208,7 +205,7 @@ class SourceService:
             external_id=int(external_id),
         )
 
-    def get_user_by_external_id(self, external_id: int):
+    async def get_user_by_external_id(self, external_id: int):
         """
         Get the user information from the system.
 
@@ -219,21 +216,16 @@ class SourceService:
             "QUERY": "VERPERFIL",
             "IDCONTACTO": external_id,
         }
-        response = httpx.post(
-            f"{self._base_url}/main_servidor.php",
-            cookies=self._cookies,
-            headers={
-                "user-agent": "",
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
+
+        response = await self._client.post(
+            "main_servidor.php",
             data=form_data,
-            timeout=self._timeout,
         )
 
         try:
             response_data = response.json()
             if response_data.get("sesion") is False:
-                return self._retry_with_login(
+                return await self._retry_with_login(
                     lambda: self.get_user_by_external_id(external_id)
                 )
         except Exception as e:
@@ -246,7 +238,7 @@ class SourceService:
 
         return extract_user_info(html_str)
 
-    def get_inbody_by_external_id(self, external_id: int) -> list[str]:
+    async def get_inbody_by_external_id(self, external_id: int) -> list[str]:
         """
         Get list of in-body information for a user by external ID.
 
@@ -258,20 +250,15 @@ class SourceService:
             "IDCONTACTO": external_id,
         }
 
-        response = httpx.post(
-            f"{self._base_url}/main_servidor.php",
-            cookies=self._cookies,
-            headers={
-                "user-agent": "",
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
+        response = await self._client.post(
+            "main_servidor.php",
             data=form_data,
-            timeout=self._timeout,
         )
+
         try:
             response = response.json()
             if response.get("sesion") is False:
-                return self._retry_with_login(
+                return await self._retry_with_login(
                     lambda: self.get_inbody_by_external_id(external_id)
                 )
         except Exception as e:

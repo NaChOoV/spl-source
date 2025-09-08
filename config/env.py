@@ -24,13 +24,17 @@ class Config:
         self.PORT = int(os.getenv("PORT", "4000"))
         self.DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 
+        # Proxy Configuration
+        self.HTTP_PROXY = os.getenv("HTTP_PROXY", None)
+        self.HTTPS_PROXY = os.getenv("HTTPS_PROXY", None)
+
         # Authentication Configuration
         self.AUTH_STRING = os.getenv("AUTH_STRING", "mysecretkey123")
 
         # Source Configuration (existing)
         self.SOURCE_BASE_URL = os.getenv("SOURCE_BASE_URL", "")
-        self.SOURCE_USERNAME = os.getenv("SOURCE_USERNAME", "-")
-        self.SOURCE_PASSWORD = os.getenv("SOURCE_PASSWORD", "-")
+        self.SOURCE_USERNAME = os.getenv("SOURCE_USERNAME", "")
+        self.SOURCE_PASSWORD = os.getenv("SOURCE_PASSWORD", "")
 
         # Additional Configuration
         self.LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")

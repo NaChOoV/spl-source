@@ -22,7 +22,7 @@ async def get_today_access():
         ApiResponse: Today's access data
     """
     try:
-        access_data = source_service.get_today_access()
+        access_data = await source_service.get_today_access()
         return ApiResponse(
             message="Today's access data retrieved successfully",
             data={
