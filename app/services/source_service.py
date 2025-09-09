@@ -21,7 +21,7 @@ from utils.date_format import format_chilean_date_time_to_utc
 class SourceService:
     def __init__(self):
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._base_url: str  = config.SOURCE_BASE_URL
+        self._base_url: str = config.SOURCE_BASE_URL
         self._cookies: Cookies | None = None
         self._proxy = None
 
@@ -30,18 +30,19 @@ class SourceService:
             self._logger.info(f"Using proxies: {self._proxy}")
 
         self._timeout = Timeout(
-            connect=10.0,  # Timeout para establecer conexión
-            read=30.0,  # Timeout para leer respuesta
-            write=10.0,  # Timeout para escribir datos
-            pool=10.0,  # Timeout para obtener conexión del pool
+            connect=15.0,  # Timeout para establecer conexión
+            read=45.0,  # Timeout para leer respuesta
+            write=15.0,  # Timeout para escribir datos
+            pool=15.0,  # Timeout para obtener conexión del pool
         )
 
         self._client = httpx.AsyncClient(
             base_url=self._base_url,
-            timeout=30.0,
+            timeout=self._timeout,
             headers={"user-agent": ""},
             proxy=self._proxy,
             cookies=self._cookies,
+            limits=httpx.Limits(max_keepalive_connections=5, max_connections=10),
         )
 
     async def login(self) -> Response:
@@ -130,7 +131,6 @@ class SourceService:
         except Exception as e:
             raise e
 
-
         html_content = response.json()["html"]
 
         match = re.search(r"tablaReser\s*=\s*(\[.*?\]);", html_content, re.DOTALL)
@@ -163,7 +163,9 @@ class SourceService:
         try:
             response_data = response.text
             if response_data == "OPCION DISPONIBLE SOLO PARA ADMINISTRADORES":
-                return await self._retry_with_login(lambda: self.get_abm_user_by_run(run))
+                return await self._retry_with_login(
+                    lambda: self.get_abm_user_by_run(run)
+                )
         except Exception as e:
             raise e
 

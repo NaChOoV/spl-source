@@ -6,7 +6,6 @@ from app.controllers import (
     user_controller,
 )
 import logging
-import asyncio
 from contextlib import asynccontextmanager
 
 from app.services.source_service import SourceService
