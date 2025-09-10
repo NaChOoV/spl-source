@@ -2,6 +2,8 @@ import httpx
 from httpx import Cookies, Response, Timeout
 
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
 from config.env import config
 from app.mappers.access_mappers import AccessDataMapper
 import re
@@ -113,7 +115,7 @@ class SourceService:
         """
         Internal method to get today's access data that can be retried.
         """
-        today = datetime.now().strftime("%Y-%m-%d")
+        today = datetime.now(ZoneInfo("America/Santiago")).strftime("%Y-%m-%d")
 
         form_data = {
             "QUERY": "ACCESOS",
