@@ -5,6 +5,7 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
+        mem_limit: 256m
         image: spl-source:latest
         network_mode: host
         restart: always
