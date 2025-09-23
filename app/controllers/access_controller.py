@@ -21,16 +21,12 @@ async def get_today_access():
     Returns:
         ApiResponse: Today's access data
     """
-    try:
-        access_data = await source_service.get_today_access()
-        return ApiResponse(
-            message="Today's access data retrieved successfully",
-            data={
-                "records": [record.model_dump(by_alias=True) for record in access_data],
-                "count": len(access_data) if access_data else 0,
-            },
-            authenticated=True,
-        )
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+    access_data = await source_service.get_today_access()
+    return ApiResponse(
+        message="Today's access data retrieved successfully",
+        data={
+            "records": [record.model_dump(by_alias=True) for record in access_data],
+            "count": len(access_data) if access_data else 0,
+        },
+        authenticated=True,
+    )
