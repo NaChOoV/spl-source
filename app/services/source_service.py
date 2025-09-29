@@ -44,7 +44,12 @@ class SourceService:
             headers={"user-agent": ""},
             proxy=self._proxy,
             cookies=self._cookies,
-            limits=httpx.Limits(max_keepalive_connections=5, max_connections=10),
+            limits=httpx.Limits(
+                max_keepalive_connections=2,
+                max_connections=5,
+                keepalive_expiry=5.0,
+            ),
+            http2=False,
         )
 
     async def login(self) -> Response:
