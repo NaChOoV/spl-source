@@ -35,7 +35,7 @@ class SourceService:
             connect=15.0,  # Timeout para establecer conexión
             read=45.0,  # Timeout para leer respuesta
             write=15.0,  # Timeout para escribir datos
-            pool=15.0,  # Timeout para obtener conexión del pool
+            pool=60.0,  # Timeout para obtener conexión del pool
         )
 
         self._client = httpx.AsyncClient(
@@ -45,11 +45,12 @@ class SourceService:
             proxy=self._proxy,
             cookies=self._cookies,
             limits=httpx.Limits(
-                max_keepalive_connections=2,
-                max_connections=5,
+                max_keepalive_connections=20,
+                max_connections=50,
                 keepalive_expiry=5.0,
             ),
             http2=False,
+            follow_redirects=True,
         )
 
     async def login(self) -> Response:
